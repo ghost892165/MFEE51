@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  </head>
+  <body>
+    <h1>這是public裡的index.html</h1>
+    <h1>搜尋診所</h1>
+    <div class="selectBottom docSelectBottom">
+      <form id="clinicSearchForm">
+        <label for="docDate">營業星期</label>
+        <input id="docDate" name="docDate" type="date" />
+        <br /><br />
+        <label for="docTime">營業時段</label>
+        <select name="docTime" id="docTime">
+          <option value="">--選擇時段--</option>
+          <option value="00:00:00">00:00:00~01:00:00</option>
+          <option value="01:00:00">01:00:00~02:00:00</option>
+          <option value="02:00:00">02:00:00~03:00:00</option>
+          <option value="03:00:00">03:00:00~04:00:00</option>
+          <option value="04:00:00">04:00:00~05:00:00</option>
+          <option value="05:00:00">05:00:00~06:00:00</option>
+          <option value="06:00:00">06:00:00~07:00:00</option>
+          <option value="07:00:00">07:00:00~08:00:00</option>
+          <option value="08:00:00">08:00:00~09:00:00</option>
+          <option value="09:00:00">09:00:00~10:00:00</option>
+          <option value="10:00:00">10:00:00~11:00:00</option>
+          <option value="11:00:00">11:00:00~12:00:00</option>
+          <option value="12:00:00">12:00:00~13:00:00</option>
+          <option value="13:00:00">13:00:00~14:00:00</option>
+          <option value="14:00:00">14:00:00~15:00:00</option>
+          <option value="15:00:00">15:00:00~16:00:00</option>
+          <option value="16:00:00">16:00:00~17:00:00</option>
+          <option value="17:00:00">17:00:00~18:00:00</option>
+          <option value="18:00:00">18:00:00~19:00:00</option>
+          <option value="19:00:00">19:00:00~20:00:00</option>
+          <option value="20:00:00">20:00:00~21:00:00</option>
+          <option value="21:00:00">21:00:00~22:00:00</option>
+          <option value="22:00:00">22:00:00~23:00:00</option>
+          <option value="23:00:00">23:00:00~24:00:00</option>
+        </select>
+        <br /><br />
+        <label for="docLocation">選擇地區</label>
+        <select name="docLocation" id="docLocation">
+          <option value="">--選擇地區--</option>
+          <option value="1">台北市</option>
+          <option value="2">新北市</option>
+          <option value="3">桃園市</option>
+          <option value="4">台中市</option>
+          <option value="5">台南市</option>
+          <option value="6">高雄市</option>
+          <option value="7">基隆市</option>
+          <option value="8">新竹市</option>
+          <option value="9">嘉義市</option>
+          <option value="10">新竹縣</option>
+          <option value="11">苗栗縣</option>
+          <option value="12">彰化縣</option>
+          <option value="13">南投縣</option>
+          <option value="14">雲林縣</option>
+          <option value="15">嘉義縣</option>
+          <option value="16">屏東縣</option>
+          <option value="17">宜蘭縣</option>
+          <option value="18">花蓮縣</option>
+          <option value="19">台東縣</option>
+          <option value="20">澎湖縣</option>
+        </select>
+        <br /><br />
+        <label for="docSubject">選擇專科</label>
+        <select name="docSubject" id="docSubject">
+          <option value="">選擇專科</option>
+          <option value="1">心臟科</option>
+          <option value="2">牙科</option>
+          <option value="3">眼科</option>
+          <option value="4">皮膚科</option>
+          <option value="5">骨科</option>
+          <option value="6">外科</option>
+          <option value="7">神經內科</option>
+        </select>
+        <br /><br />
+        <input
+          type="button"
+          id="docConfirm"
+          value="確認"
+          onclick="searchClinic()"
+        />
+      </form>
+      <h2>Results</h2>
+      <div id="results"></div>
+    </div>
+    <script>
+      function searchClinic() {
+        const form = document.getElementById("clinicSearchForm");
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData);
+
+        fetch(`/todo/clinic2?${params.toString()}`)
+          .then((response) => response.json())
+          .then((data) => {
+            const resultsDiv = document.getElementById("results");
+            resultsDiv.innerHTML = "";
+            if (data.length === 0) {
+              resultsDiv.innerHTML = "<p>No clinics found.</p>";
+            } else {
+              data.forEach((clinic) => {
+                const clinicDiv = document.createElement("div");
+                clinicDiv.innerHTML = `
+                <p><strong>Name:</strong> ${clinic.clinic_name}</p>
+                <p><strong>Address:</strong> ${clinic.clinic_address}</p>
+                <p><strong>Operating Hours:</strong> ${clinic.clinic_startTime} - ${clinic.clinic_endTime}</p>
+                <p><strong>Days:</strong> ${clinic.clinic_date}</p>
+                <hr>
+              `;
+                resultsDiv.appendChild(clinicDiv);
+              });
+            }
+          })
+          .catch((error) => console.error("Error fetching data:", error));
+      }
+    </script>
+  </body>
+</html>
