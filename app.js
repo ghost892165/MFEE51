@@ -201,6 +201,7 @@ app.get("/clinics", function (req, res) {
         doctor.name AS doctor_name,
         doctor.seniority AS doctor_seniority,
         doctor.info AS doctor_info,
+        doctor.id AS doctor_id,
         GROUP_CONCAT(DISTINCT ctag.id) AS ctags
       FROM clinic
         INNER JOIN location ON clinic.location_id = location.id
@@ -296,29 +297,6 @@ app.post("/create-appointment", function (req, res) {
   const { clinicId, doctorId, appointmentDate, appointmentTime, petId } =
     req.body;
 
-  console.log("Received appointment data:", {
-    clinicId,
-    doctorId,
-    appointmentDate,
-    appointmentTime,
-    petId,
-  });
-
-  if (
-    !clinicId ||
-    !doctorId ||
-    !appointmentDate ||
-    !appointmentTime ||
-    !petId
-  ) {
-    return res
-      .status(400)
-      .json({
-        error: "Missing required fields",
-        details: "All fields are required",
-      });
-  }
-
   // 生成一個唯一的預約 ID
   const appointmentId = Date.now().toString();
 
@@ -341,24 +319,83 @@ app.post("/create-appointment", function (req, res) {
     function (err, result) {
       if (err) {
         console.error("Error creating appointment:", err);
-        console.error("SQL Query:", query);
-        console.error("SQL Parameters:", [
-          appointmentId,
-          clinicId,
-          doctorId,
-          appointmentDate,
-          appointmentTime,
-          petId,
-        ]);
-        res
-          .status(500)
-          .json({
-            error: "Failed to create appointment",
-            details: err.message,
-          });
+        res.status(500).json({ error: "Failed to create appointment" });
       } else {
         res.json({ appointmentId: appointmentId });
       }
     }
   );
+});
+
+app.get("/appointment/:id", function (req, res) {
+  const appointmentId = req.params.id;
+
+  // 使用 JOIN 查詢來獲取更多相關信息
+  const query = `
+    SELECT 
+      a.id, a.appointment_date, a.appointment_time, a.status,
+      c.name AS clinic_name, c.address AS clinic_address,
+      d.name AS doctor_name, d.sub AS doctor_specialty
+    FROM appointments a
+    JOIN clinic c ON a.clinic_id = c.id
+    JOIN doctor d ON a.doctor_id = d.id
+    WHERE a.id = ?
+  `;
+
+  conn.query(query, [appointmentId], function (err, results) {
+    if (err) {
+      console.error("Error fetching appointment:", err);
+      res.status(500).json({ error: "Failed to fetch appointment details" });
+    } else if (results.length === 0) {
+      res.status(404).json({ error: "Appointment not found" });
+    } else {
+      res.json(results[0]);
+    }
+  });
+});
+
+// 獲取所有寵物
+app.get("/pets", (req, res) => {
+  const query = "SELECT id, name, picture FROM pets";
+  conn.query(query, (error, results) => {
+    if (error) {
+      console.error("Error fetching pets:", error);
+      return res.status(500).json({ error: "Database error" });
+    }
+    res.json(results);
+  });
+});
+
+// 獲取特定用戶的寵物
+app.get("/pets/user/:userId", (req, res) => {
+  const userId = req.params.userId;
+  const query = "SELECT id, name, picture FROM pets WHERE owner_id = ?";
+  conn.query(query, [userId], (error, results) => {
+    if (error) {
+      console.error("Error fetching user's pets:", error);
+      return res.status(500).json({ error: "Database error" });
+    }
+    res.json(results);
+  });
+});
+
+// 獲取單個寵物的詳細信息
+app.get("/pets/:petId", (req, res) => {
+  const petId = req.params.petId;
+  const query = "SELECT * FROM pets WHERE id = ?";
+  conn.query(query, [petId], (error, results) => {
+    if (error) {
+      console.error("Error fetching pet details:", error);
+      return res.status(500).json({ error: "Database error" });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Pet not found" });
+    }
+    res.json(results[0]);
+  });
+});
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: "Something went wrong!" });
 });
